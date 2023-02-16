@@ -18,6 +18,8 @@ var letterKey = document.querySelector('#key-section');
 var rules = document.querySelector('#rules-section');
 var stats = document.querySelector('#stats-section');
 var gameOverBox = document.querySelector('#game-over-section');
+var gameLossBox = document.querySelector('#game-loss-section');
+var gameLossWord = document.querySelector('#winning-word')
 var gameOverGuessCount = document.querySelector('#game-over-guesses-count');
 var gameOverGuessGrammar = document.querySelector('#game-over-guesses-plural');
 
@@ -103,8 +105,8 @@ function submitGuess() {
     compareGuess();
     if (checkForWin()) {
       setTimeout(declareWinner, 1000);
-    } else if(currentRow === 5 && !checkForWin()){
-      console.log('You made a change you genius')
+    } else if(currentRow === 6 && !checkForWin()){
+      setTimeout(declareLoser, 1000)
     } else {
       changeRow();
 
@@ -183,19 +185,16 @@ function changeRow() {
 function declareWinner() {
   recordGameStats(); //adds an object literal to the gamesPlayed array 
   changeGameOverText();
-  viewGameOverMessage();
+  viewGameOverMessageWin();
   setTimeout(startNewGame, 4000);
 }
 
-// function declareLoser() {
-  //if currentRow === 6 && the guess is not the winning word, 
-  //then show the losing message
-  //setTimeOutline which starts the new game which clears prev guesses, moves the focus back, sets a new game, shows and hides proper things
-//   recordGameStats(); --needs logic to record the proper info
-
-//   viewGameOverMessage();
-//   setTimeout(startNewGame, 4000);
-// }
+function declareLoser() {
+  recordGameStats(); //needs logic to record the proper info
+  gameLossWord.innerText = winningWord;
+  viewGameOverMessageLoss();
+  setTimeout(startNewGame, 4000);
+}
 
 function recordGameStats() {
   //update this to have logic to update the info if they've lost
@@ -253,6 +252,7 @@ function viewGame() {
   viewGameButton.classList.add('active');
   viewRulesButton.classList.remove('active');
   viewStatsButton.classList.remove('active');
+  gameLossBox.classList.add('collapsed')
 }
 
 function viewStats() {
@@ -265,8 +265,13 @@ function viewStats() {
   viewStatsButton.classList.add('active');
 }
 
-function viewGameOverMessage() {
+function viewGameOverMessageWin() {
   gameOverBox.classList.remove('collapsed')
+  letterKey.classList.add('hidden');
+  gameBoard.classList.add('collapsed');
+}
+function viewGameOverMessageLoss() {
+  gameLossBox.classList.remove('collapsed')
   letterKey.classList.add('hidden');
   gameBoard.classList.add('collapsed');
 }
