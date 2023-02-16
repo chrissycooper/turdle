@@ -6,10 +6,11 @@ var gamesPlayed = [];
 let words;
 let percentWon;
 let avgGuesses;
+let statsData;
 
 
 // Query Selectors
-var inputs = document.querySelectorAll('input'); //all of the boxes
+var inputs = document.querySelectorAll('input'); 
 var guessButton = document.querySelector('#guess-button');
 var keyLetters = document.querySelectorAll('span');
 var errorMessage = document.querySelector('#error-message');
@@ -35,10 +36,12 @@ fetch("http://localhost:3001/api/v1/words")
 .then(data => {
   words = data;
   setGame()})
+.catch(err => console.log(err))
+
 
 // Event Listeners
 
-inputs.forEach(input => input.addEventListener('keyup', function() {moveToNextInput(event)}))
+inputs.forEach(input => input.addEventListener('keyup', function(event) {moveToNextInput(event)}))
 
 keyLetters.forEach(letter => letter.addEventListener('click', function() {clickLetter(event)}))
 
@@ -48,28 +51,34 @@ viewRulesButton.addEventListener('click', viewRules);
 
 viewGameButton.addEventListener('click', viewGame);
 
-viewStatsButton.addEventListener('click', viewStats);
+viewStatsButton.addEventListener('click', function () {
+  fetch("http://localhost:3001/api/v1/games")
+  .then(response => response.json())
+  .then(data => {
+    statsData = data;
+    getStats();
+    viewStats();
+  })
+  .catch(err => console.log(err));
+  
+});
 
 // Functions
 function setGame() {
-  currentRow = 1;         //resets currentRow to 1
-  winningWord = getRandomWord();    //sets the winningWord to a random word (weird that it isn't accessible globally)
-  // console.log("inside set game", winningWord)
+  currentRow = 1;
+  winningWord = getRandomWord();
   updateInputPermissions();
 }
 
-
-
 function getRandomWord() {
   var randomIndex = Math.floor(Math.random() * 2500);
-  console.log(words[randomIndex])
   return words[randomIndex];
 }
 
-function updateInputPermissions() {  //inputs is all of the boxes that can be typed into, this function decides based on whether the inputs id includes 'currentRow' which is a number
+function updateInputPermissions() {
   inputs.forEach(input => {
     if(!input.id.includes(`-${currentRow}-`)) {
-      input.disabled = true; //adding a disabled property?
+      input.disabled = true;
     } else {
       input.disabled = false;
     }
@@ -109,7 +118,7 @@ function submitGuess() {
     if (checkForWin()) {
       setTimeout(declareWinner, 1000);
     } else if(currentRow === 6 && !checkForWin()){
-      setTimeout(declareLoser, 1000)
+      setTimeout(declareLoser, 1000);
     } else {
       changeRow();
 
@@ -133,7 +142,6 @@ function checkIsWord() {
 
 function compareGuess() {
   var guessLetters = guess.split('');
-  console.log(guessLetters)
   
     guessLetters.forEach((letter, index) => {
       if (winningWord.includes(letter) && winningWord.split('')[index] !== letter) {
@@ -161,7 +169,7 @@ function updateBoxColor(letterLocation, className) {
   row[letterLocation].classList.add(className);
 }
 
-function updateKeyColor(letter, className) {    //updates the color of the letters of the alphabet on the left
+function updateKeyColor(letter, className) {
   var keyLetter = null;
 
   keyLetters.forEach(item =>  {
@@ -183,7 +191,19 @@ function changeRow() {
 }
 
 function declareWinner() {
-  recordGameStats(); //adds an object literal to the gamesPlayed array 
+  recordGameStats(); 
+  let hotdog = gamesPlayed[gamesPlayed.length-1];
+  fetch('http://localhost:3001/api/v1/games', {
+    method: 'POST',
+    body: JSON.stringify(hotdog),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).then(response => response.json())
+  .then(data => console.log(data))
+  .catch(err => console.log('error', err))
+
+  getStats();
   changeGameOverText();
   viewGameOverMessageWin();
   setTimeout(startNewGame, 4000);
@@ -191,6 +211,16 @@ function declareWinner() {
 
 function declareLoser() {
   recordGameStats(); 
+  let hotdog = gamesPlayed[gamesPlayed.length-1];
+  fetch('http://localhost:3001/api/v1/games', {
+    method: 'POST',
+    body: JSON.stringify(hotdog),
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).then(response => response.json())
+  .then(data => console.log(data))
+  .catch(err => console.log('error', err))
   gameLossWord.innerText = winningWord;
   viewGameOverMessageLoss();
   setTimeout(startNewGame, 4000);
@@ -200,19 +230,19 @@ function recordGameStats() {
   if(checkForWin()){
     gamesPlayed.push({ solved: true, guesses: currentRow });
   } else {
-    gamesPlayed.push({solved: false, guesses: 6})
+    gamesPlayed.push({solved: false, guesses: 6});
   }
 }
 
 function getStats() {
-  const gamesWon = gamesPlayed.filter(game => game.solved)
-  percentWon = Math.round(gamesWon.length/gamesPlayed.length * 100)
-  const numGuesses = gamesPlayed.reduce((acc, game) => {
-    acc += game.guesses
-    return acc
+  const gamesWon = statsData.filter(game => game.solved);
+  percentWon = Math.round(gamesWon.length/statsData.length * 100);
+  const numGuesses = statsData.reduce((acc, game) => {
+    acc += game.numGuesses;
+    return acc;
   }, 0)
-  avgGuesses = Math.round(numGuesses/gamesPlayed.length)
-}
+  avgGuesses = Math.round(numGuesses/statsData.length);
+};
 
 function changeGameOverText() {
   gameOverGuessCount.innerText = currentRow;
@@ -235,13 +265,13 @@ function clearGameBoard() {
   inputs.forEach(input => {
     input.value = '';
     input.classList.remove('correct-location', 'wrong-location', 'wrong');
-  })
+  });
 }
 
 function clearKey() {
   keyLetters.forEach(item => {
     item.classList.remove('correct-location-key', 'wrong-location-key', 'wrong-key');
-  }) 
+  });
 }
 
 // Change Page View Functions
@@ -265,13 +295,11 @@ function viewGame() {
   viewGameButton.classList.add('active');
   viewRulesButton.classList.remove('active');
   viewStatsButton.classList.remove('active');
-  gameLossBox.classList.add('collapsed')
+  gameLossBox.classList.add('collapsed');
 }
 
 function viewStats() {
-  
-  getStats()
-  statsTotalGames.innerText = gamesPlayed.length;
+  statsTotalGames.innerText = statsData.length;
   statsPercentWins.innerText = percentWon;
   statsAvgGuesses.innerText = avgGuesses;
   letterKey.classList.add('hidden');
@@ -284,12 +312,13 @@ function viewStats() {
 }
 
 function viewGameOverMessageWin() {
-  gameOverBox.classList.remove('collapsed')
+  gameOverBox.classList.remove('collapsed');
   letterKey.classList.add('hidden');
   gameBoard.classList.add('collapsed');
 }
+
 function viewGameOverMessageLoss() {
-  gameLossBox.classList.remove('collapsed')
+  gameLossBox.classList.remove('collapsed');
   letterKey.classList.add('hidden');
   gameBoard.classList.add('collapsed');
 }
