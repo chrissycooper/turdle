@@ -3,9 +3,10 @@ var winningWord = '';
 var currentRow = 1;
 var guess = '';
 var gamesPlayed = [];
+let words;
 
 // Query Selectors
-var inputs = document.querySelectorAll('input');
+var inputs = document.querySelectorAll('input'); //all of the boxes
 var guessButton = document.querySelector('#guess-button');
 var keyLetters = document.querySelectorAll('span');
 var errorMessage = document.querySelector('#error-message');
@@ -20,15 +21,20 @@ var gameOverBox = document.querySelector('#game-over-section');
 var gameOverGuessCount = document.querySelector('#game-over-guesses-count');
 var gameOverGuessGrammar = document.querySelector('#game-over-guesses-plural');
 
+fetch("http://localhost:3001/api/v1/words")
+.then(response => response.json())
+.then(data => {
+  words = data;
+  setGame()})
+
 // Event Listeners
-window.addEventListener('load', setGame);
 
 for (var i = 0; i < inputs.length; i++) {
-  inputs[i].addEventListener('keyup', function() { moveToNextInput(event) });
+  inputs[i].addEventListener('keyup', function(event) { moveToNextInput(event) });
 }
 
 for (var i = 0; i < keyLetters.length; i++) {
-  keyLetters[i].addEventListener('click', function() { clickLetter(event) });
+  keyLetters[i].addEventListener('click', function(event) { clickLetter(event) });
 }
 
 guessButton.addEventListener('click', submitGuess);
@@ -41,20 +47,24 @@ viewStatsButton.addEventListener('click', viewStats);
 
 // Functions
 function setGame() {
-  currentRow = 1;
-  winningWord = getRandomWord();
+  currentRow = 1;         //resets currentRow to 1
+  winningWord = getRandomWord();    //sets the winningWord to a random word (weird that it isn't accessible globally)
+  // console.log("inside set game", winningWord)
   updateInputPermissions();
 }
 
+
+
 function getRandomWord() {
   var randomIndex = Math.floor(Math.random() * 2500);
+  console.log(words[randomIndex])
   return words[randomIndex];
 }
 
-function updateInputPermissions() {
+function updateInputPermissions() {  //inputs is all of the boxes that can be typed into, this function decides based on whether the inputs id includes 'currentRow' which is a number
   for(var i = 0; i < inputs.length; i++) {
     if(!inputs[i].id.includes(`-${currentRow}-`)) {
-      inputs[i].disabled = true;
+      inputs[i].disabled = true; //adding a disabled property?
     } else {
       inputs[i].disabled = false;
     }
@@ -93,8 +103,11 @@ function submitGuess() {
     compareGuess();
     if (checkForWin()) {
       setTimeout(declareWinner, 1000);
+    } else if(currentRow === 5 && !checkForWin()){
+      console.log('You made a change you genius')
     } else {
       changeRow();
+
     }
   } else {
     errorMessage.innerText = 'Not a valid word. Try again!';
@@ -115,6 +128,8 @@ function checkIsWord() {
 
 function compareGuess() {
   var guessLetters = guess.split('');
+  console.log(guessLetters)
+  console.log('inside compare guess', winningWord)
 
   for (var i = 0; i < guessLetters.length; i++) {
 
@@ -144,7 +159,7 @@ function updateBoxColor(letterLocation, className) {
   row[letterLocation].classList.add(className);
 }
 
-function updateKeyColor(letter, className) {
+function updateKeyColor(letter, className) {    //updates the color of the letters of the alphabet on the left
   var keyLetter = null;
 
   for (var i = 0; i < keyLetters.length; i++) {
@@ -166,13 +181,24 @@ function changeRow() {
 }
 
 function declareWinner() {
-  recordGameStats();
+  recordGameStats(); //adds an object literal to the gamesPlayed array 
   changeGameOverText();
   viewGameOverMessage();
   setTimeout(startNewGame, 4000);
 }
 
+// function declareLoser() {
+  //if currentRow === 6 && the guess is not the winning word, 
+  //then show the losing message
+  //setTimeOutline which starts the new game which clears prev guesses, moves the focus back, sets a new game, shows and hides proper things
+//   recordGameStats(); --needs logic to record the proper info
+
+//   viewGameOverMessage();
+//   setTimeout(startNewGame, 4000);
+// }
+
 function recordGameStats() {
+  //update this to have logic to update the info if they've lost
   gamesPlayed.push({ solved: true, guesses: currentRow });
 }
 
