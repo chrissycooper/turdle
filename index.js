@@ -131,7 +131,6 @@ function checkIsWord() {
 function compareGuess() {
   var guessLetters = guess.split('');
   console.log(guessLetters)
-  console.log('inside compare guess', winningWord)
 
   for (var i = 0; i < guessLetters.length; i++) {
 
@@ -190,15 +189,18 @@ function declareWinner() {
 }
 
 function declareLoser() {
-  recordGameStats(); //needs logic to record the proper info
+  recordGameStats(); 
   gameLossWord.innerText = winningWord;
   viewGameOverMessageLoss();
   setTimeout(startNewGame, 4000);
 }
 
 function recordGameStats() {
-  //update this to have logic to update the info if they've lost
-  gamesPlayed.push({ solved: true, guesses: currentRow });
+  if(checkForWin()){
+    gamesPlayed.push({ solved: true, guesses: currentRow });
+  } else {
+    gamesPlayed.push({solved: false, guesses: 6})
+  }
 }
 
 function changeGameOverText() {
