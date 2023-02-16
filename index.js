@@ -4,6 +4,9 @@ var currentRow = 1;
 var guess = '';
 var gamesPlayed = [];
 let words;
+let percentWon;
+let avgGuesses;
+
 
 // Query Selectors
 var inputs = document.querySelectorAll('input'); //all of the boxes
@@ -19,9 +22,13 @@ var rules = document.querySelector('#rules-section');
 var stats = document.querySelector('#stats-section');
 var gameOverBox = document.querySelector('#game-over-section');
 var gameLossBox = document.querySelector('#game-loss-section');
-var gameLossWord = document.querySelector('#winning-word')
+var gameLossWord = document.querySelector('#winning-word');
 var gameOverGuessCount = document.querySelector('#game-over-guesses-count');
 var gameOverGuessGrammar = document.querySelector('#game-over-guesses-plural');
+var statsTotalGames = document.querySelector('#stats-total-games');
+var statsPercentWins = document.querySelector('#stats-percent-correct');
+var statsAvgGuesses = document.querySelector('#stats-average-guesses');
+
 
 fetch("http://localhost:3001/api/v1/words")
 .then(response => response.json())
@@ -203,6 +210,16 @@ function recordGameStats() {
   }
 }
 
+function getStats() {
+  const gamesWon = gamesPlayed.filter(game => game.solved)
+  percentWon = Math.round(gamesWon.length/gamesPlayed.length * 100)
+  const numGuesses = gamesPlayed.reduce((acc, game) => {
+    acc += game.guesses
+    return acc
+  }, 0)
+  avgGuesses = Math.round(numGuesses/gamesPlayed.length)
+}
+
 function changeGameOverText() {
   gameOverGuessCount.innerText = currentRow;
   if (currentRow < 2) {
@@ -258,6 +275,11 @@ function viewGame() {
 }
 
 function viewStats() {
+  
+  getStats()
+  statsTotalGames.innerText = gamesPlayed.length;
+  statsPercentWins.innerText = percentWon;
+  statsAvgGuesses.innerText = avgGuesses;
   letterKey.classList.add('hidden');
   gameBoard.classList.add('collapsed');
   rules.classList.add('collapsed');
